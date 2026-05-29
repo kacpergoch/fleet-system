@@ -1,64 +1,45 @@
 #!/usr/bin/env bash
-# Fleet System — skrypt przygotowania produkcji dla GHCR
-# Uruchom interaktywnie, aby wygenerować `.env.prod` i dostać gotowe komendy.
+# Fleet System - production setup for GHCR
 
 set -euo pipefail
 
-ask_yes_no() {
-    local prompt="$1"
-    local response
-    while true; do
-        read -r -p "$prompt (t/n): " response
-        case "$response" in
-            [tT]|[tT][aA][kK]|[yY]|[yY][eE][sS]) return 0 ;;
-            [nN]|[nN][iI][eE]|[nN][oO]) return 1 ;;
-            *) echo "Wpisz 't' albo 'n'." ;;
-        esac
-    done
-}
-
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Fleet System — przygotowanie produkcji (GHCR)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "-----------------------------------------------"
+echo "Fleet System - production setup (GHCR)"
+echo "-----------------------------------------------"
 echo ""
 
-read -r -p "Podaj nazwę użytkownika GitHub: " github_user
+read -r -p "Enter your GitHub username: " github_user
 if [ -z "$github_user" ]; then
-    echo "Błąd: nazwa użytkownika GitHub nie może być pusta."
+    echo "Error: GitHub username cannot be empty."
     exit 1
 fi
 
-read -r -p "Podaj tag obrazu [domyślnie: 1.0.0]: " image_tag
+read -r -p "Enter image tag [default: 1.0.0]: " image_tag
 image_tag=${image_tag:-1.0.0}
 
-read -r -p "Podaj port frontendu [domyślnie: 80]: " frontend_port
+read -r -p "Enter frontend port [default: 80]: " frontend_port
 frontend_port=${frontend_port:-80}
 
-read -r -s -p "Podaj mocne hasło PostgreSQL (min. 20 znaków): " db_password
+read -r -s -p "Enter a strong PostgreSQL password (min 20 chars): " db_password
 echo ""
 if [ ${#db_password} -lt 20 ]; then
-    echo "Błąd: hasło jest za krótkie (minimum 20 znaków)."
+    echo "Error: password is too short (minimum 20 characters)."
     exit 1
 fi
 
 registry_host="ghcr.io/$github_user"
 
 echo ""
-echo "Podsumowanie konfiguracji:"
-echo "  Rejestr:        $registry_host"
-echo "  Tag obrazu:     $image_tag"
-echo "  Port frontendu: $frontend_port"
-echo "  Hasło DB:       ***${#db_password} znaków***"
+echo "Configuration summary:"
+echo "  Registry:      $registry_host"
+echo "  Image tag:     $image_tag"
+echo "  Frontend port: $frontend_port"
+echo "  DB password:   ***${#db_password} characters***"
 echo ""
 
-if ! ask_yes_no 'Czy chcesz zapisać .env.prod z tą konfiguracją?'; then
-    echo "Przerwano."
-    exit 1
-fi
-
 cat > .env.prod <<EOF
-# Fleet System — środowisko produkcyjne
-# UWAGA: nie commituj tego pliku do gita
+# Fleet System - production environment
+# Do not commit this file to git
 
 REGISTRY_HOST=$registry_host
 IMAGE_TAG=$image_tag
@@ -70,26 +51,26 @@ POSTGRES_PASSWORD=$db_password
 EOF
 
 echo ""
-echo "✓ Utworzono .env.prod"
+echo "OK: created .env.prod"
 echo ""
-echo "Dalsze kroki:"
+echo "Next steps:"
 echo ""
-echo "1. Zaloguj się do GHCR:"
+echo "1. Log in to GHCR:"
 echo "   echo \"<PAT>\" | docker login ghcr.io -u $github_user --password-stdin"
 echo ""
-echo "2. Zbuduj i wypchnij obrazy:"
+echo "2. Build and push images:"
 echo "   docker compose build"
 echo "   docker tag fleet-system-backend:latest $registry_host/fleet-backend:$image_tag"
 echo "   docker tag fleet-system-frontend:latest $registry_host/fleet-frontend:$image_tag"
 echo "   docker push $registry_host/fleet-backend:$image_tag"
 echo "   docker push $registry_host/fleet-frontend:$image_tag"
 echo ""
-echo "3. Na serwerze produkcyjnym uruchom:"
+echo "3. On the production server run:"
 echo "   docker compose -f docker-compose.prod.yml --env-file .env.prod pull"
 echo "   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d"
 echo ""
-echo "4. Sprawdź stan:"
+echo "4. Verify status:"
 echo "   docker compose -f docker-compose.prod.yml ps"
 echo ""
-echo "Szczegóły: DEPLOY.md"
+echo "Details: DEPLOY.md"
 
