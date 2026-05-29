@@ -111,5 +111,21 @@ POSTGRES_PASSWORD=replace_with_a_strong_password
 - If the frontend cannot reach the API: verify `VITE_API_BASE` for local development or confirm that nginx proxy in Docker Compose is correctly configured.
 - If the backend fails to start: consult the service logs (`docker compose logs backend`) or Gradle/console output and verify that PostgreSQL is ready and reachable.
 
+9) Running `docker-compose.prod.yml` locally when GHCR images are not available
+
+If you want to run the exact `docker-compose.prod.yml` locally but the production images are not published to GHCR yet, you can build and tag local images with the same names the compose file expects. A helper script is provided:
+
+PowerShell (from the `fleet-system` directory):
+
+```powershell
+# builds and tags images as ghcr.io/kacpergoch/fleet-backend:latest and ghcr.io/kacpergoch/fleet-frontend:latest
+.\build-local-prod-images.ps1 -RegistryHost 'ghcr.io/kacpergoch' -ImageTag 'latest'
+
+# then run the production compose (optionally with .env.prod)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+This avoids changing the production compose file and prevents Docker Compose from trying to pull missing images from the registry.
+
 If you would like, I can extend this guide with a more detailed `.env` example, instructions for macOS/Linux, or deployment recommendations.
 

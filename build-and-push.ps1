@@ -25,7 +25,8 @@ Write-Host "Image Tag: $ImageTag" -ForegroundColor Yellow
 Write-Host ""
 
 Write-Host "[1/4] Building images..." -ForegroundColor Green
-docker compose build
+# Pass VITE_API_BASE explicitly to ensure frontend is built with /api for production
+docker compose build --build-arg VITE_API_BASE=/api
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed!" -ForegroundColor Red
     exit 1

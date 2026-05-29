@@ -44,7 +44,8 @@ echo "Image tag: ${IMAGE_TAG}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 echo "[1/4] Building images..."
-docker compose build
+# pass VITE_API_BASE explicitly to ensure frontend uses /api in production build
+docker compose build --build-arg VITE_API_BASE=/api
 
 echo "[2/4] Tagging images..."
 docker tag fleet-system-backend:latest "${REGISTRY}/fleet-backend:${IMAGE_TAG}"
