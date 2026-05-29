@@ -51,7 +51,7 @@ echo "  Port frontendu: $frontend_port"
 echo "  Hasło DB:       ***${#db_password} znaków***"
 echo ""
 
-if ! ask_yes_no "Czy chcesz zapisać `.env.prod` z tą konfiguracją?"; then
+if ! ask_yes_no "Czy chcesz zapisać \`.env.prod\` z tą konfiguracją?"; then
     echo "Przerwano."
     exit 1
 fi
@@ -70,7 +70,7 @@ POSTGRES_PASSWORD=$db_password
 EOF
 
 echo ""
-echo "✓ Utworzono `.env.prod`"
+echo "✓ Utworzono \`.env.prod\`"
 echo ""
 echo "Dalsze kroki:"
 echo ""
