@@ -77,10 +77,8 @@ For image publication and production deployment, the repository provides the fol
 Typical usage:
 
 ```powershell
-.
-\build-and-push.ps1 -GithubUsername "your-username" -ImageTag "1.0.0" -PersonalAccessToken "ghp_xxx"
-.
-\deploy-production.ps1 -EnvFile ".env.prod" -ComposeFile "docker-compose.prod.yml"
+.\build-and-push.ps1 -GithubUsername "your-username" -ImageTag "1.0.0" -PersonalAccessToken "ghp_xxx"
+.\deploy-production.ps1 -EnvFile ".env.prod" -ComposeFile "docker-compose.prod.yml"
 ```
 
 ```bash
@@ -88,12 +86,28 @@ Typical usage:
 ./deploy-production.sh --env-file .env.prod --compose-file docker-compose.prod.yml
 ```
 
-6) Useful commands
+If the images are public in GHCR, the production host does not need to log in to pull them.
+
+6) `.env.prod` and database password
+
+Yes — `docker compose --env-file .env.prod` is exactly the right place to set production values such as the PostgreSQL password. The file is used at deploy time to inject values into the compose stack.
+
+Example values in `.env.prod`:
+
+```dotenv
+IMAGE_TAG=1.0.0
+FRONTEND_PORT=80
+POSTGRES_DB=fleet_mgmt
+POSTGRES_USER=fleet_admin
+POSTGRES_PASSWORD=replace_with_a_strong_password
+```
+
+7) Useful commands
 - Stop services: `docker compose down`
 - Follow logs: `docker compose logs -f` or `docker compose logs -f <service>`
 - Rebuild and restart: `docker compose up -d --build`
 
-7) Troubleshooting
+8) Troubleshooting
 - If the frontend cannot reach the API: verify `VITE_API_BASE` for local development or confirm that nginx proxy in Docker Compose is correctly configured.
 - If the backend fails to start: consult the service logs (`docker compose logs backend`) or Gradle/console output and verify that PostgreSQL is ready and reachable.
 

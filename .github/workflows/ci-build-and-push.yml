@@ -1,0 +1,72 @@
+name: CI Build and Push
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Build backend (Gradle)
+      working-directory: ./fleet_mgmt_backend
+      run: |
+        ./gradlew -v
+        ./gradlew clean bootJar --no-daemon
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Build frontend
+      working-directory: ./fleet_mgmt_frontend
+      run: |
+        npm ci
+        npm run build
+
+    - name: Login to GHCR
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PAT }}
+
+    - name: Build & push backend image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./fleet_mgmt_backend
+        file: ./fleet_mgmt_backend/Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ghcr.io/${{ github.repository_owner }}/fleet-backend:${{ github.sha }},ghcr.io/${{ github.repository_owner }}/fleet-backend:latest
+
+    - name: Build & push frontend image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./fleet_mgmt_frontend
+        file: ./fleet_mgmt_frontend/Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ghcr.io/${{ github.repository_owner }}/fleet-frontend:${{ github.sha }},ghcr.io/${{ github.repository_owner }}/fleet-frontend:latest
+
+    - name: Output image locations
+      run: |
+        echo "Backend image: ghcr.io/${{ github.repository_owner }}/fleet-backend:${{ github.sha }}"
+        echo "Frontend image: ghcr.io/${{ github.repository_owner }}/fleet-frontend:${{ github.sha }}"
+
