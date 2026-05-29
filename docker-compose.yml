@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fleet_mgmt
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fleet-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../fleet_mgmt_backend       # katalog projektu backendowego
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/fleet_mgmt
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      db:
+        condition: service_healthy  # czeka aż PostgreSQL będzie gotowy
+    networks:
+      - fleet-net
+    volumes:
+      - backend_storage:/app/storage  # trwałość plików między restartami
+    # port 8080 NIE jest eksponowany na hosta — dostępny tylko wewnętrznie
+    # nginx proxy przekazuje ruch /api → backend:8080
+    expose:
+      - "8080"
+
+  frontend:
+    build:
+      context: ../fleet_mgmt_frontend      # katalog projektu frontendowego
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: "/api"  # nginx proxy obsługuje /api → backend
+    restart: unless-stopped
+    ports:
+      - "80:80"   # jedyny port eksponowany na hosta
+    depends_on:
+      - backend
+    networks:
+      - fleet-net
+
+volumes:
+  postgres_data:
+  backend_storage:
+
+networks:
+  fleet-net:
+    driver: bridge
